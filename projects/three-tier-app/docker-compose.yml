@@ -1,0 +1,50 @@
+services:
+
+  frontend_app:
+    build: ./frontend
+    container_name: frontend-app
+    ports:
+      - "8085:80"
+    depends_on:
+      - backend
+    networks:
+      - three-tier-apps
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: backend-app
+    env_file:
+      - .env
+    networks:
+      - three-tier-apps
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+
+  postgres:
+    image: postgres:17
+    container_name: postgres-db
+    env_file:
+      - .env
+    volumes:
+      - postgres-data-v2:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - three-tier-apps
+    restart: unless-stopped
+
+networks:
+  three-tier-apps:
+    driver: bridge
+
+volumes:
+  postgres-data-v2:
+     name: postgres-data-v2
